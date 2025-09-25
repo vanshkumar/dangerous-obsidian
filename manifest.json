@@ -1,0 +1,11 @@
+{
+  "id": "dangerous-mode",
+  "name": "Dangerous Mode",
+  "version": "0.1.0",
+  "minAppVersion": "1.4.0",
+  "description": "Most Dangerous Writing-style mode: if you stop typing for N seconds, wipes the current note.",
+  "author": "dangerous-obsidian",
+  "authorUrl": "",
+  "isDesktopOnly": false
+}
+

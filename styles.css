@@ -1,0 +1,29 @@
+/* Dangerous Mode overlay visuals */
+.dangerous-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 999999; /* above panes/sidebars */
+  --danger-progress: 0; /* 0 → 1 over idle window */
+  box-shadow:
+    inset 0 0 0 calc(48px * var(--danger-progress)) rgba(255, 0, 0, calc(0.70 * var(--danger-progress))),
+    inset 0 0 calc(80px * var(--danger-progress)) calc(15px * var(--danger-progress)) rgba(255, 0, 0, calc(0.50 * var(--danger-progress)));
+  transition: box-shadow 0.08s linear;
+}
+
+/* Optional: subtle warning text (unused, kept for future) */
+.dangerous-overlay::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+/* While active, prevent text selection throughout the app */
+.dangerous-no-select, .dangerous-no-select * {
+  -webkit-user-select: none !important;
+  user-select: none !important;
+}
+.dangerous-no-select *::selection {
+  background: transparent !important;
+  color: inherit !important;
+}

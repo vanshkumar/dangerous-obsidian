@@ -1,0 +1,17 @@
+{
+  "name": "dangerous-obsidian",
+  "version": "0.1.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "scripts": {
+    "build": "node esbuild.config.mjs",
+    "postbuild": "node scripts/deploy.mjs",
+    "deploy": "node scripts/deploy.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "^0.21.5",
+    "obsidian": "^1.5.12",
+    "tslib": "^2.6.2",
+    "typescript": "^5.4.5"
+  }
+}
