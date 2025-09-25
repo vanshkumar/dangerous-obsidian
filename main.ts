@@ -213,8 +213,6 @@ export default class DangerousModePlugin extends Plugin {
       }
     }
 
-    // Clear clipboard best-effort
-    await clearClipboardSafe();
   }
 
   private ensureOverlay() {
@@ -356,19 +354,7 @@ function clamp(n: number, lo: number, hi: number) {
   return Math.max(lo, Math.min(hi, n));
 }
 
-async function clearClipboardSafe() {
-  try {
-    if (navigator?.clipboard?.writeText) {
-      await navigator.clipboard.writeText("");
-      return;
-    }
-  } catch {}
-  try {
-    const req: any = (window as any).require?.("electron");
-    const clipboard = req?.clipboard;
-    if (clipboard?.writeText) clipboard.writeText("");
-  } catch {}
-}
+// (clipboard clearing removed by request)
 
 // Extracts YAML frontmatter block (including closing delimiter and a trailing newline)
 // when it appears at the very start of the file. Returns null if no frontmatter.
