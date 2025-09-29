@@ -1,11 +1,10 @@
 {
   "id": "dangerous-mode",
   "name": "Dangerous Mode",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "minAppVersion": "1.4.0",
-  "description": "Most Dangerous Writing-style mode: if you stop typing for N seconds, wipes the current note.",
-  "author": "dangerous-obsidian",
-  "authorUrl": "",
+  "description": "Timed writing mode: keep typing or after 5 seconds of inactivity the current note is erased.",
+  "author": "Vansh Kumar",
+  "authorUrl": "https://vanshkumar.net",
   "isDesktopOnly": false
 }
-
