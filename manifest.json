@@ -3,7 +3,7 @@
   "name": "Dangerous Mode",
   "version": "1.0.0",
   "minAppVersion": "1.4.0",
-  "description": "Timed writing mode: keep typing or after 5 seconds of inactivity the current note is erased.",
+  "description": "Dangerous writing mode: keep typing or after 5 seconds of inactivity the current note is erased.",
   "author": "Vansh Kumar",
   "authorUrl": "https://vanshkumar.net",
   "isDesktopOnly": false
