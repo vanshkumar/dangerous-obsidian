@@ -12,6 +12,7 @@ export default class DangerousModePlugin extends Plugin {
   private statusEl: HTMLElement | null = null;
   private idleWarnFired: boolean = false;
   private overlayEl: HTMLElement | null = null;
+  private overlayLevel: number = 0;
   private wiping: boolean = false;
   private handlersAttached: boolean = false;
 
@@ -41,7 +42,7 @@ export default class DangerousModePlugin extends Plugin {
 
     this.addCommand({
       id: "dangerous-mode-start",
-      name: "Start Dangerous Mode",
+      name: "Start",
       callback: () => this.startSessionFlow(),
     });
 
@@ -219,20 +220,24 @@ export default class DangerousModePlugin extends Plugin {
     if (this.overlayEl) return;
     const el = document.createElement("div");
     el.className = "dangerous-overlay";
-    el.style.setProperty("--danger-progress", "0");
-    el.style.display = "none";
     document.body.appendChild(el);
     this.overlayEl = el;
+    this.overlayLevel = 0;
   }
 
   private setOverlayProgress(p: number) {
     if (!this.overlayEl) return;
-    this.overlayEl.style.setProperty("--danger-progress", p.toFixed(3));
+    const level = clamp(Math.round(p * 10), 0, 10);
+    if (level === this.overlayLevel) return;
+    // Swap progress-* class to avoid inline styles
+    this.overlayEl.classList.remove(`progress-${this.overlayLevel}`);
+    this.overlayEl.classList.add(`progress-${level}`);
+    this.overlayLevel = level;
   }
 
   private setOverlayVisible(v: boolean) {
     if (!this.overlayEl) return;
-    this.overlayEl.style.display = v ? "" : "none";
+    this.overlayEl.classList.toggle("is-visible", v);
   }
 
   // Attach once; handlers check this.active

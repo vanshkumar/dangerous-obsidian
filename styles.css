@@ -11,6 +11,23 @@
   transition: box-shadow 0.08s linear;
 }
 
+/* Hidden by default; toggled via class from code */
+.dangerous-overlay { display: none; }
+.dangerous-overlay.is-visible { display: block; }
+
+/* Progress levels (0..10) controlled by classes, theme-overridable */
+.dangerous-overlay.progress-0  { --danger-progress: 0; }
+.dangerous-overlay.progress-1  { --danger-progress: 0.1; }
+.dangerous-overlay.progress-2  { --danger-progress: 0.2; }
+.dangerous-overlay.progress-3  { --danger-progress: 0.3; }
+.dangerous-overlay.progress-4  { --danger-progress: 0.4; }
+.dangerous-overlay.progress-5  { --danger-progress: 0.5; }
+.dangerous-overlay.progress-6  { --danger-progress: 0.6; }
+.dangerous-overlay.progress-7  { --danger-progress: 0.7; }
+.dangerous-overlay.progress-8  { --danger-progress: 0.8; }
+.dangerous-overlay.progress-9  { --danger-progress: 0.9; }
+.dangerous-overlay.progress-10 { --danger-progress: 1; }
+
 /* Optional: subtle warning text (unused, kept for future) */
 .dangerous-overlay::after {
   content: "";
