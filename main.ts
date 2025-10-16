@@ -1,4 +1,4 @@
-import { App, MarkdownView, Notice, Plugin, TFile, SuggestModal, Editor } from "obsidian";
+import { App, MarkdownView, Notice, Plugin, TFile, Editor, Modal } from "obsidian";
 import { EditorView } from "@codemirror/view";
 
 export default class DangerousModePlugin extends Plugin {
@@ -303,54 +303,82 @@ interface SessionState {
   docLength: number;
 }
 
-type DurationItem = { label: string; minutes: number | "custom" };
+class DurationPickerModal extends Modal {
+  private resolved = false;
 
-class DurationModal extends SuggestModal<DurationItem> {
-  private items: DurationItem[] = [
-    { label: "5 minutes", minutes: 5 },
-    { label: "10 minutes", minutes: 10 },
-    { label: "15 minutes", minutes: 15 },
-    { label: "Custom…", minutes: "custom" },
-  ];
-
-  constructor(app: App, private resolve: (m: number | null) => void) {
+  constructor(app: App, private onResult: (n: number | null) => void) {
     super(app);
-    this.setPlaceholder("Select Dangerous Mode duration");
-    this.limit = 4;
   }
 
-  getSuggestions(query: string): DurationItem[] {
-    const q = query.toLowerCase();
-    return this.items.filter((i) => i.label.toLowerCase().includes(q));
-  }
+  onOpen() {
+    const { contentEl, titleEl } = this;
+    contentEl.empty();
+    titleEl.setText("Dangerous Mode Duration");
 
-  renderSuggestion(value: DurationItem, el: HTMLElement) {
-    el.createEl("div", { text: value.label });
-  }
-
-  onChooseSuggestion(item: DurationItem) {
-    if (item.minutes === "custom") {
-      const raw = window.prompt("Enter duration in minutes", "5");
-      if (raw == null) {
-        this.resolve(null);
-        return;
-      }
-      const n = Number(raw);
-      if (!Number.isFinite(n) || n <= 0) {
-        new Notice("Invalid duration");
-        this.resolve(null);
-        return;
-      }
-      this.resolve(n);
-    } else {
-      this.resolve(item.minutes);
+    const quick = contentEl.createEl("div");
+    const quickOpts: Array<{ label: string; minutes: number }> = [
+      { label: "5 minutes", minutes: 5 },
+      { label: "10 minutes", minutes: 10 },
+      { label: "15 minutes", minutes: 15 },
+    ];
+    for (const opt of quickOpts) {
+      const btn = quick.createEl("button", { text: opt.label });
+      btn.addEventListener("click", () => this.choose(opt.minutes));
     }
+
+    const customWrap = contentEl.createEl("div");
+    const input = customWrap.createEl("input", { type: "number" as any });
+    input.placeholder = "Custom minutes (e.g., 5 or 7.5)";
+    input.step = "any";
+    input.min = String(0.1);
+    input.value = "";
+    input.addEventListener("keydown", (e: KeyboardEvent) => {
+      if (e.key === "Enter") this.submit(input);
+    });
+
+    const buttons = contentEl.createEl("div", { cls: "modal-button-container" });
+    const startBtn = buttons.createEl("button", { text: "Start" });
+    const cancelBtn = buttons.createEl("button", { text: "Cancel" });
+    startBtn.addEventListener("click", () => this.submit(input));
+    cancelBtn.addEventListener("click", () => this.cancel());
+
+    input.focus();
+  }
+
+  private choose(minutes: number) {
+    this.resolved = true;
+    this.onResult(minutes);
+    this.close();
+  }
+
+  private submit(input: HTMLInputElement) {
+    const n = Number(input.value);
+    if (!Number.isFinite(n) || n <= 0) {
+      new Notice("Invalid duration");
+      input.focus();
+      input.select();
+      return;
+    }
+    this.resolved = true;
+    this.onResult(n);
+    this.close();
+  }
+
+  private cancel() {
+    this.resolved = true;
+    this.onResult(null);
+    this.close();
+  }
+
+  onClose() {
+    if (!this.resolved) this.onResult(null);
+    this.contentEl.empty();
   }
 }
 
 function pickDuration(app: App): Promise<number | null> {
   return new Promise((resolve) => {
-    const modal = new DurationModal(app, resolve);
+    const modal = new DurationPickerModal(app, resolve);
     modal.open();
   });
 }
