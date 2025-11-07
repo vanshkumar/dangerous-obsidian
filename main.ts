@@ -16,7 +16,7 @@ export default class DangerousModePlugin extends Plugin {
   private wiping: boolean = false;
   private handlersAttached: boolean = false;
 
-  async onload() {
+  onload() {
     // Capture text insertions via CodeMirror updates
     this.registerEditorExtension(
       EditorView.updateListener.of((update) => {
@@ -41,7 +41,7 @@ export default class DangerousModePlugin extends Plugin {
     );
 
     this.addCommand({
-      id: "dangerous-mode-start",
+      id: "start",
       name: "Start",
       callback: () => this.startSessionFlow(),
     });
@@ -71,12 +71,12 @@ export default class DangerousModePlugin extends Plugin {
 
   private async startSessionFlow() {
     if (this.active) {
-      new Notice("Dangerous Mode already running.");
+      new Notice("Dangerous mode already running.");
       return;
     }
     const view = this.app.workspace.getActiveViewOfType(MarkdownView);
     if (!view || !view.file) {
-      new Notice("Open a note to start Dangerous Mode.");
+      new Notice("Open a note to start dangerous mode.");
       return;
     }
 
@@ -102,13 +102,13 @@ export default class DangerousModePlugin extends Plugin {
     // Initialize idle tracking UI (simple status bar countdown)
     this.lastInsertAt = startedAt;
     this.statusEl = this.addStatusBarItem();
-    this.statusEl.setText(`Dangerous idle: ${(idleCutoffMs / 1000).toFixed(1)}s`);
+    this.statusEl.setText(`Dangerous mode idle: ${(idleCutoffMs / 1000).toFixed(1)}s`);
     this.idleWarnFired = false;
     this.ensureOverlay();
     document.body.classList.add("dangerous-no-select");
     this.startIdleTicker();
 
-    new Notice(`Dangerous Mode armed for ${minutes} min. (idle countdown active)`);
+    new Notice(`Dangerous mode armed for ${minutes} min. (idle countdown active)`);
   }
 
   private endSession() {
@@ -137,7 +137,7 @@ export default class DangerousModePlugin extends Plugin {
       const now = Date.now();
       // End-of-session check first
       if (now >= this.session.endsAt) {
-        new Notice("Dangerous Mode: session complete.");
+        new Notice("Dangerous mode: session complete.");
         this.endSession();
         return;
       }
@@ -162,10 +162,10 @@ export default class DangerousModePlugin extends Plugin {
 
       if (!this.statusEl) return;
       if (remaining > 0) {
-        this.statusEl.setText(`Dangerous idle: ${(remaining / 1000).toFixed(1)}s`);
+        this.statusEl.setText(`Dangerous mode idle: ${(remaining / 1000).toFixed(1)}s`);
       } else {
-        this.statusEl.setText(`Dangerous idle: 0.0s`);
-        this.handleIdleTimeout();
+        this.statusEl.setText(`Dangerous mode idle: 0.0s`);
+        void this.handleIdleTimeout();
       }
     };
     // Update 10 times per second for smoothness
@@ -180,10 +180,10 @@ export default class DangerousModePlugin extends Plugin {
     this.wiping = true;
     try {
       await this.wipeTargetNote();
-      new Notice("Dangerous Mode: idle cutoff — note wiped.");
+      new Notice("Dangerous mode: idle cutoff — note wiped.");
     } catch (e) {
       console.error(e);
-      new Notice("Dangerous Mode: failed to wipe note (see console)");
+      new Notice("Dangerous mode: failed to wipe note (see console).");
     } finally {
       this.endSession();
       this.wiping = false;
@@ -209,8 +209,14 @@ export default class DangerousModePlugin extends Plugin {
       if (view?.file?.path === this.session.targetPath) {
         try {
           // setViewData(data, clear) clears undo history when clear=true
-          (view as any).setViewData?.(preservedFrontmatter, true);
-        } catch {}
+          const clearable = view as MarkdownView & {
+            setViewData?: (data: string, clear?: boolean) => void;
+          };
+          clearable.setViewData?.(preservedFrontmatter, true);
+        } catch (err) {
+          // Best-effort: clearing undo history may not be available on all views
+          console.debug("Dangerous mode: could not clear view history", err);
+        }
       }
     }
 
@@ -259,8 +265,8 @@ export default class DangerousModePlugin extends Plugin {
       }
     }, true);
 
-    for (const evt of ["copy", "cut", "paste"]) {
-      this.registerDomEvent(document, evt as any, (e: Event) => {
+    for (const evt of ["copy", "cut", "paste"] as const) {
+      this.registerDomEvent(document, evt, (e: Event) => {
         if (!this.active) return;
         e.preventDefault();
         e.stopPropagation();
@@ -313,7 +319,7 @@ class DurationPickerModal extends Modal {
   onOpen() {
     const { contentEl, titleEl } = this;
     contentEl.empty();
-    titleEl.setText("Dangerous Mode Duration");
+    titleEl.setText("Dangerous mode duration");
 
     const quick = contentEl.createEl("div");
     const quickOpts: Array<{ label: string; minutes: number }> = [
@@ -327,7 +333,8 @@ class DurationPickerModal extends Modal {
     }
 
     const customWrap = contentEl.createEl("div");
-    const input = customWrap.createEl("input", { type: "number" as any });
+    const input = customWrap.createEl("input");
+    input.type = "number";
     input.placeholder = "Custom minutes (e.g., 5 or 7.5)";
     input.step = "any";
     input.min = String(0.1);
