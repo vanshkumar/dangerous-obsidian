@@ -1,4 +1,4 @@
-import { App, MarkdownView, Notice, Plugin, TFile, Editor, Modal } from "obsidian";
+import { App, MarkdownView, Notice, Plugin, TFile, Editor, Modal, getFrontMatterInfo } from "obsidian";
 import { EditorView } from "@codemirror/view";
 
 export default class DangerousModePlugin extends Plugin {
@@ -43,7 +43,12 @@ export default class DangerousModePlugin extends Plugin {
     this.addCommand({
       id: "start",
       name: "Start",
-      callback: () => this.startSessionFlow(),
+      editorCheckCallback: (checking, editor, view) => {
+        // Only enable when: not already active AND an active Markdown file exists
+        const canRun = !this.active && !!view?.file && !!editor;
+        if (canRun && !checking) this.startSessionFlow();
+        return canRun;
+      },
     });
 
     this.attachGlobalGuards();
@@ -197,22 +202,21 @@ export default class DangerousModePlugin extends Plugin {
 
     // Read and preserve YAML frontmatter (if present)
     const raw = await this.app.vault.read(file);
-    const preservedFrontmatter = extractFrontmatterBlock(raw) ?? "";
+    const preservedFrontmatter = getPreservedFrontmatter(raw);
 
-    // Persist preserved frontmatter only
-    await this.app.vault.modify(file, preservedFrontmatter);
+    // Persist preserved frontmatter only, using Vault.process to run in background
+    await this.app.vault.process(file, () => preservedFrontmatter);
 
     // Clear open views for this file and drop history if possible
     const leaves = this.app.workspace.getLeavesOfType("markdown");
     for (const leaf of leaves) {
-      const view = leaf.view as unknown as MarkdownView;
-      if (view?.file?.path === this.session.targetPath) {
+      const view = leaf.view;
+      if (view instanceof MarkdownView && view.file?.path === this.session.targetPath) {
         try {
-          // setViewData(data, clear) clears undo history when clear=true
-          const clearable = view as MarkdownView & {
-            setViewData?: (data: string, clear?: boolean) => void;
-          };
-          clearable.setViewData?.(preservedFrontmatter, true);
+          // setViewData(data, clear) clears undo history when clear=true (best-effort)
+          if (hasSetViewData(view)) {
+            view.setViewData(preservedFrontmatter, true);
+          }
         } catch (err) {
           // Best-effort: clearing undo history may not be available on all views
           console.debug("Dangerous mode: could not clear view history", err);
@@ -398,21 +402,13 @@ function clamp(n: number, lo: number, hi: number) {
 
 // Extracts YAML frontmatter block (including closing delimiter and a trailing newline)
 // when it appears at the very start of the file. Returns null if no frontmatter.
-function extractFrontmatterBlock(text: string): string | null {
-  // Normalize to \n for scanning; preserve original block content via line joins.
-  const lines = text.split(/\r?\n/);
-  if (lines.length === 0) return null;
-  if (lines[0].trim() !== "---") return null;
-  for (let i = 1; i < lines.length; i++) {
-    if (lines[i].trim() === "---") {
-      // Include lines[0..i]
-      let block = lines.slice(0, i + 1).join("\n");
-      // Ensure a single trailing newline after the closing delimiter
-      if (!block.endsWith("\n")) block += "\n";
-      return block;
-    }
-  }
-  return null;
+function getPreservedFrontmatter(content: string): string {
+  const info = getFrontMatterInfo(content);
+  if (!info.exists) return "";
+  // Slice including leading/closing '---' via contentStart boundary
+  let block = content.slice(0, info.contentStart);
+  if (!block.endsWith("\n")) block += "\n"; // ensure trailing newline
+  return block;
 }
 
 function isMod(e: KeyboardEvent) {
@@ -424,3 +420,6 @@ function keyEq(e: KeyboardEvent, char: string) {
 }
 
 // helpers
+function hasSetViewData(v: unknown): v is { setViewData: (data: string, clear?: boolean) => void } {
+  return !!v && typeof (v as any).setViewData === "function";
+}
