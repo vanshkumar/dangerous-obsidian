@@ -46,7 +46,7 @@ export default class DangerousModePlugin extends Plugin {
       editorCheckCallback: (checking, editor, view) => {
         // Only enable when: not already active AND an active Markdown file exists
         const canRun = !this.active && !!view?.file && !!editor;
-        if (canRun && !checking) this.startSessionFlow();
+        if (canRun && !checking) void this.startSessionFlow();
         return canRun;
       },
     });
@@ -421,5 +421,7 @@ function keyEq(e: KeyboardEvent, char: string) {
 
 // helpers
 function hasSetViewData(v: unknown): v is { setViewData: (data: string, clear?: boolean) => void } {
-  return !!v && typeof (v as any).setViewData === "function";
+  if (typeof v !== "object" || v === null) return false;
+  const candidate = v as { setViewData?: unknown };
+  return typeof candidate.setViewData === "function";
 }
