@@ -200,12 +200,10 @@ export default class DangerousModePlugin extends Plugin {
     const file = this.app.vault.getAbstractFileByPath(this.session.targetPath);
     if (!file || !(file instanceof TFile)) return;
 
-    // Read and preserve YAML frontmatter (if present)
-    const raw = await this.app.vault.read(file);
-    const preservedFrontmatter = getPreservedFrontmatter(raw);
-
-    // Persist preserved frontmatter only, using Vault.process to run in background
-    await this.app.vault.process(file, () => preservedFrontmatter);
+    // Preserve frontmatter only
+    const preservedFrontmatter = await this.app.vault.process(file, fileContents => {
+      return getPreservedFrontmatter(fileContents);
+    });
 
     // Clear open views for this file and drop history if possible
     const leaves = this.app.workspace.getLeavesOfType("markdown");
